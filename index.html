@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>포커스 가든 — 디지털 도파민 디톡스</title>
+  <meta name="description" content="집중력 강화 타이머. 탭을 이탈하면 키우던 식물이 시들어요." />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400&display=swap"
+    rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0f0d;
+      --surface: #111a14;
+      --surface2: #182019;
+      --border: #1e2e21;
+      --green-deep: #1a3d22;
+      --green-mid: #2d6b3a;
+      --green-bright: #4caf6b;
+      --green-glow: #6dff9a;
+      --yellow: #f0d060;
+      --red: #e05555;
+      --text: #c8ddc0;
+      --text-dim: #5a7560;
+      --text-bright: #eaf5e8;
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Gowun Dodum', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* BG texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 60% 50% at 20% 80%, #0d2e1555 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 80% 20%, #0a1f1055 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative;
+      z-index: 10;
+      padding: 32px 24px 0;
+      text-align: center;
+    }
+
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      color: var(--text-bright);
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
+    header h1 em {
+      font-style: italic;
+      color: var(--green-glow);
+    }
+
+    header p {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .main {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── 식물 SVG 컨테이너 ── */
+    .plant-stage {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plant-stage::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to top, #0d1e1088, transparent);
+      pointer-events: none;
+    }
+
+    #plantSvgWrap {
+      width: 160px;
+      height: 180px;
+      position: relative;
+      transition: filter 1.5s ease;
+    }
+
+    #plantSvgWrap.warning {
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-4px) rotate(-1deg);
+      }
+
+      75% {
+        transform: translateX(4px) rotate(1deg);
+      }
+    }
+
+    /* SVG 식물 */
+    #plantSvg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .leaf {
+      transform-origin: bottom center;
+    }
+
+    .leaf-l {
+      animation: swayL 4s ease-in-out infinite;
+    }
+
+    .leaf-r {
+      animation: swayR 4s ease-in-out infinite 0.5s;
+    }
+
+    @keyframes swayL {
+
+      0%,
+      100% {
+        transform: rotate(0deg);
+      }
+
+      50% {
+        transform: rotate(-4deg);
+      }
+    }
+
+    @keyframes swayR {
+
+      0%,
+      100% {
+        transform: rotate(0deg);
+      }
+
+      50% {
+        transform: rotate(4deg);
+      }
+    }
+
+    .plant-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    #plantStatus {
+      font-size: 0.9rem;
+      color: var(--green-bright);
+      transition: color 0.8s;
+      min-height: 1.2em;
+      text-align: center;
+    }
+
+    #plantStatus.danger {
+      color: var(--red);
+    }
+
+    /* ── 타이머 디스플레이 ── */
+    .timer-display {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+    }
+
+    #timerEl {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(3rem, 16vw, 5.5rem);
+      font-weight: 300;
+      color: var(--text-bright);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      transition: color 0.5s;
+    }
+
+    #timerEl.danger {
+      color: var(--red);
+    }
+
+    .timer-sub {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── 세션 프리셋 ── */
+    .presets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      flex: 1;
+      min-width: 70px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-dim);
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 0.8rem;
+      padding: 10px 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .preset-btn:hover {
+      border-color: var(--green-mid);
+      color: var(--text);
+    }
+
+    .preset-btn.active {
+      border-color: var(--green-bright);
+      color: var(--green-bright);
+      background: #1a3d2244;
+    }
+
+    /* ── 컨트롤 버튼 ── */
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-main {
+      flex: 1;
+      background: var(--green-mid);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 1rem;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-main::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
+      pointer-events: none;
+    }
+
+    .btn-main:hover {
+      background: #3a8a4a;
+      transform: translateY(-1px);
+    }
+
+    .btn-main:active {
+      transform: translateY(0);
+    }
+
+    .btn-main:disabled {
+      background: var(--surface2);
+      color: var(--text-dim);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-reset {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-dim);
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 0.85rem;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-reset:hover {
+      border-color: var(--text-dim);
+      color: var(--text);
+    }
+
+    /* ── 소음 선택 ── */
+    .noise-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+
+    .noise-panel h3 {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    .noise-options {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .noise-btn {
+      flex: 1;
+      min-width: 80px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-dim);
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 0.78rem;
+      padding: 10px 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .noise-btn:hover {
+      border-color: var(--green-mid);
+      color: var(--text);
+    }
+
+    .noise-btn.active {
+      border-color: var(--green-bright);
+      color: var(--green-bright);
+      background: #1a3d2244;
+    }
+
+    .volume-row {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .volume-row label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    input[type=range] {
+      flex: 1;
+      appearance: none;
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--green-bright);
+      cursor: pointer;
+    }
+
+    /* ── 통계 ── */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      color: var(--green-glow);
+      font-weight: 300;
+    }
+
+    .stat-label {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      margin-top: 3px;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── 이탈 경고 오버레이 ── */
+    #warningOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #00000099;
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      padding: 24px;
+    }
+
+    #warningOverlay.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .warning-icon {
+      font-size: 3rem;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.15);
+      }
+    }
+
+    .warning-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.8rem;
+      color: var(--red);
+    }
+
+    .warning-body {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
+    .btn-return {
+      background: var(--green-mid);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 1rem;
+      padding: 14px 32px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-return:hover {
+      background: #3a8a4a;
+    }
+
+    /* ── install banner ── */
+    #installBanner {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface);
+      border: 1px solid var(--green-mid);
+      border-radius: 14px;
+      padding: 14px 20px;
+      font-size: 0.85rem;
+      color: var(--text);
+      z-index: 50;
+      gap: 12px;
+      align-items: center;
+      white-space: nowrap;
+      box-shadow: 0 8px 32px #00000088;
+    }
+
+    #installBanner.show {
+      display: flex;
+    }
+
+    #installBanner button {
+      background: var(--green-mid);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-family: 'Gowun Dodum', sans-serif;
+      font-size: 0.82rem;
+      padding: 7px 14px;
+      cursor: pointer;
+    }
+
+    #installBanner .dismiss {
+      background: transparent;
+      color: var(--text-dim);
+      padding: 7px 8px;
+    }
+
+    /* ── 완료 축하 ── */
+    #completeOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #00000099;
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      padding: 24px;
+    }
+
+    #completeOverlay.show {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .complete-icon {
+      font-size: 4rem;
+    }
+
+    .complete-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--green-glow);
+    }
+
+    .complete-body {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
+    footer {
+      position: relative;
+      z-index: 10;
+      padding: 12px 24px 24px;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    /* 반응형 */
+    @media (max-width: 380px) {
+      #timerEl {
+        font-size: 3.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>🌿 포커스 <em>가든</em></h1>
+    <p>탭을 이탈하면 식물이 시들어요</p>
+  </header>
+
+  <main class="main">
+
+    <!-- 식물 -->
+    <div class="plant-stage">
+      <div id="plantSvgWrap">
+        <svg id="plantSvg" viewBox="0 0 160 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+          style="width:100%;height:100%;overflow:visible"></svg>
+      </div>
+      <div id="plantStatus">🌱 집중하면 식물이 자라요</div>
+      <div class="plant-label">생장 상태</div>
+    </div>
+
+    <!-- 타이머 -->
+    <div class="timer-display">
+      <div id="timerEl">25:00</div>
+      <div class="timer-sub" id="timerSub">세션 준비 중</div>
+    </div>
+
+    <!-- 프리셋 -->
+    <div class="presets">
+      <button class="preset-btn active" data-min="25">🍅 25분</button>
+      <button class="preset-btn" data-min="45">📚 45분</button>
+      <button class="preset-btn" data-min="60">🔥 60분</button>
+      <button class="preset-btn" data-min="90">💎 90분</button>
+    </div>
+
+    <!-- 컨트롤 -->
+    <div class="controls">
+      <button class="btn-main" id="startBtn">▶ 시작</button>
+      <button class="btn-reset" id="resetBtn">↺ 초기화</button>
+    </div>
+
+    <!-- 배경음 -->
+    <div class="noise-panel">
+      <h3>🎧 집중 사운드</h3>
+      <div class="noise-options">
+        <button class="noise-btn active" data-noise="none">🔕 없음</button>
+        <button class="noise-btn" data-noise="white">🌫️ 백색소음</button>
+        <button class="noise-btn" data-noise="brown">🌊 갈색소음</button>
+        <button class="noise-btn" data-noise="rain">🌧️ 빗소리</button>
+        <button class="noise-btn" data-noise="forest">🌲 숲소리</button>
+      </div>
+      <div class="volume-row">
+        <label>볼륨</label>
+        <input type="range" id="volumeSlider" min="0" max="100" value="40" />
+        <label id="volDisplay">40</label>
+      </div>
+    </div>
+
+    <!-- 통계 -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-val" id="statSessions">0</div>
+        <div class="stat-label">완료 세션</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statTotal">0</div>
+        <div class="stat-label">집중 분</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statBreaks">0</div>
+        <div class="stat-label">이탈 횟수</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 이탈 경고 오버레이 -->
+  <div id="warningOverlay">
+    <div class="warning-icon">🥀</div>
+    <div class="warning-title">집중이 깨졌어요!</div>
+    <div class="warning-body" id="warningMsg">탭을 이탈했어요. 식물이 시들기 시작했습니다.<br>지금 돌아와서 집중을 회복하세요.</div>
+    <button class="btn-return" id="returnBtn">🌱 돌아가기</button>
+  </div>
+
+  <!-- 완료 오버레이 -->
+  <div id="completeOverlay">
+    <div class="complete-icon">🌸</div>
+    <div class="complete-title">세션 완료!</div>
+    <div class="complete-body" id="completeMsg">훌륭해요! 집중 세션을 마쳤습니다.<br>식물이 건강하게 자랐어요. 🌿</div>
+    <button class="btn-return" id="nextBtn">✨ 다음 세션</button>
+  </div>
+
+  <!-- PWA 설치 배너 -->
+  <div id="installBanner">
+    <span>📲 앱으로 설치하면 더 편해요</span>
+    <button id="installBtn">설치</button>
+    <button class="dismiss" id="dismissInstall">✕</button>
+  </div>
+
+  <footer>포커스 가든 v1.0 · 디지털 도파민 디톡스 타이머</footer>
+
+  <script>
+    // ══════════════════════════════════════════════
+    // 상태
+    // ══════════════════════════════════════════════
+    const state = {
+      running: false,
+      paused: false,
+      totalSec: 25 * 60,
+      remaining: 25 * 60,
+      elapsedFocusSec: 0,      // 이번 세션 실제 집중 시간(초)
+      sessions: parseInt(localStorage.getItem('fg_sessions') || '0'),
+      totalSecs: parseInt(localStorage.getItem('fg_totalSecs') || '0'), // 누적 집중 초
+      breaks: parseInt(localStorage.getItem('fg_breaks') || '0'),
+      penaltySecs: 0,            // 이탈 시 멈추는 패널티 시간(초)
+      growthPct: 0,              // 성장률 0~100 (경과/전체)
+      currentNoise: 'none',
+      volume: 0.4,
+    };
+
+    let timerInterval = null;
+    let audioCtx = null;
+    let noiseNode = null;
+    let gainNode = null;
+    let deferredInstall = null;
+    let prevElapsedMins = 0; // 실시간 분 단위 업데이트를 위한 이전 분 추척 변수
+
+    // ── DOM refs ──
+    const timerEl = document.getElementById('timerEl');
+    const timerSub = document.getElementById('timerSub');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const plantWrap = document.getElementById('plantSvgWrap');
+    const plantStatus = document.getElementById('plantStatus');
+    const warningOverlay = document.getElementById('warningOverlay');
+    const completeOverlay = document.getElementById('completeOverlay');
+    const volSlider = document.getElementById('volumeSlider');
+    const volDisplay = document.getElementById('volDisplay');
+    const statSessions = document.getElementById('statSessions');
+    const statTotal = document.getElementById('statTotal');
+    const statBreaks = document.getElementById('statBreaks');
+    const installBanner = document.getElementById('installBanner');
+
+    // ── 초기화 ──
+    updateStats();
+    renderTimer();
+    drawPlant(0); // 시작은 새싹
+
+    // ══════════════════════════════════════════════
+    // 프리셋
+    // ══════════════════════════════════════════════
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (state.running) return;
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mins = parseInt(btn.dataset.min);
+        state.totalSec = mins * 60;
+        state.remaining = mins * 60;
+        state.elapsedFocusSec = 0;
+        state.growthPct = 0;
+        state.penaltySecs = 0;
+        prevElapsedMins = 0;
+        renderTimer();
+        drawPlant(0);
+      });
+    });
+
+    // ══════════════════════════════════════════════
+    // 시작 / 일시정지
+    // ══════════════════════════════════════════════
+    startBtn.addEventListener('click', () => {
+      initAudio();
+      if (!state.running) {
+        state.running = true;
+        state.paused = false;
+        startBtn.textContent = '⏸ 일시정지';
+        timerSub.textContent = '집중 중 🌿';
+        startTimer();
+        startNoise();
+      } else {
+        state.paused = !state.paused;
+        if (state.paused) {
+          startBtn.textContent = '▶ 계속';
+          timerSub.textContent = '일시정지됨';
+          pauseNoise();
+        } else {
+          startBtn.textContent = '⏸ 일시정지';
+          timerSub.textContent = '집중 중 🌿';
+          resumeNoise();
+        }
+      }
+    });
+
+    // ── 초기화 ──
+    resetBtn.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      state.running = false;
+      state.paused = false;
+      state.remaining = state.totalSec;
+      state.elapsedFocusSec = 0;
+      state.growthPct = 0;
+      state.penaltySecs = 0;
+      prevElapsedMins = 0;
+      startBtn.textContent = '▶ 시작';
+      timerSub.textContent = '세션 준비 중';
+      timerEl.classList.remove('danger');
+      renderTimer();
+      drawPlant(0);
+      stopNoise();
+    });
+
+    // ══════════════════════════════════════════════
+    // 타이머
+    // ══════════════════════════════════════════════
+    function startTimer() {
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        if (state.paused) return;
+        // 패널티 시간 진행 중
+        if (state.penaltySecs > 0) {
+          state.penaltySecs--;
+          timerSub.textContent = `🚨 패널티: ${Math.floor(state.penaltySecs / 60)}분 ${state.penaltySecs % 60}초 정지`;
+          if (state.penaltySecs === 0) {
+            timerSub.textContent = '집중 중 🌿';
+          }
+          return; // 패널티 중에는 남은 시간, 집중 시간, 성장이 오르지 않음
+        }
+
+        state.remaining--;
+        state.elapsedFocusSec++;
+
+        // 성장률 = 경과 / 전체 (0~100)
+        state.growthPct = Math.min(100, (state.elapsedFocusSec / state.totalSec) * 100);
+        drawPlant(state.growthPct);
+
+        // 실시간 분단위 업데이트
+        const currentElapsedMins = Math.floor(state.elapsedFocusSec / 60);
+        if (currentElapsedMins > prevElapsedMins) {
+          state.totalSecs += 60; // 1분 누적
+          localStorage.setItem('fg_totalSecs', state.totalSecs);
+          updateStats();
+          prevElapsedMins = currentElapsedMins;
+        }
+
+        if (state.remaining <= 0) {
+          sessionComplete();
+          return;
+        }
+        renderTimer();
+        if (state.remaining === 5 * 60) timerSub.textContent = '⏰ 5분 남았어요!';
+      }, 1000);
+    }
+
+    function renderTimer() {
+      const m = Math.floor(state.remaining / 60);
+      const s = state.remaining % 60;
+      timerEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      timerEl.classList.toggle('danger', state.remaining < 60);
+    }
+
+    function sessionComplete() {
+      clearInterval(timerInterval);
+      state.running = false;
+      state.sessions++;
+
+      // 남은 자투리 초가 있다면 마저 더함 (실시간 반영과 중복을 피하기 위함)
+      const remainingSecs = state.elapsedFocusSec % 60;
+      state.totalSecs += remainingSecs;
+
+      localStorage.setItem('fg_sessions', state.sessions);
+      localStorage.setItem('fg_totalSecs', state.totalSecs);
+      updateStats();
+      stopNoise();
+      // 완성 식물 (growth 100)
+      state.growthPct = 100;
+      drawPlant(100);
+      playTone(660, 0.25, 0.4);
+      setTimeout(() => playTone(880, 0.2, 0.4), 420);
+      setTimeout(() => playTone(1100, 0.15, 0.6), 840);
+      const focusedMins = Math.floor(state.elapsedFocusSec / 60);
+      const totalMins = Math.floor(state.totalSecs / 60);
+      document.getElementById('completeMsg').innerHTML =
+        `훌륭해요! <strong>${focusedMins}분</strong> 집중 세션을 마쳤습니다.<br>오늘 총 <strong>${totalMins}분</strong> 집중했어요. 🌿`;
+      completeOverlay.classList.add('show');
+      startBtn.textContent = '▶ 시작';
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      completeOverlay.classList.remove('show');
+      state.remaining = state.totalSec;
+      state.elapsedFocusSec = 0;
+      state.growthPct = 0;
+      state.penaltySecs = 0;
+      prevElapsedMins = 0;
+      renderTimer();
+      drawPlant(0);
+      timerSub.textContent = '세션 준비 중';
+    });
+
+    // ══════════════════════════════════════════════
+    // 식물 성장 렌더링
+    // growth: 0~100 (시간 경과)
+    // ══════════════════════════════════════════════
+    function drawPlant(growth) {
+      const svg = document.getElementById('plantSvg');
+      const g = growth / 100;   // 0~1
+
+      // 고정된 건강한 식물 색상
+      const stemColor = '#4caf6b';
+      const leafColor1 = '#3a9a5a';
+      const leafColor2 = '#2d8a4a';
+      const leafColor3 = '#4caf6b';
+      const budColor = '#6dff9a';
+      const potColor = '#3a6a3a';
+      const potRimColor = '#4a8a4a';
+
+      // ── 단계별 형태 정의 ──
+      // g=0 : 씨앗/새싹  g=0.2: 어린싹  g=0.5: 중간  g=1.0: 완성
+
+      // 줄기 높이: 새싹(5px) → 완성(80px)  (화분 상단 y=136 기준)
+      const stemTopY = lerp(131, 56, easeOut(g));  // 136 - stemHeight
+      const stemTopX = lerp(80, 80, g);
+
+      // 줄기 경로
+      const stemPath = g < 0.05
+        ? `M80 136 Q80 ${stemTopY + 2} 80 ${stemTopY}`
+        : `M80 136 Q${78 - g * 3} ${80 + (1 - g) * 40} 80 ${stemTopY + 10} Q${82 + g * 2} ${stemTopY + 4} 80 ${stemTopY}`;
+
+      // 잎 4장: growth에 따라 순차 등장 + 크기 성장
+      // 잎1(좌하): g>0.15 부터
+      const leaf1Show = smoothstep(0.15, 0.35, g);
+      // 잎2(우중): g>0.30 부터
+      const leaf2Show = smoothstep(0.30, 0.50, g);
+      // 잎3(좌상): g>0.50 부터
+      const leaf3Show = smoothstep(0.50, 0.70, g);
+      // 잎4(우상): g>0.70 부터
+      const leaf4Show = smoothstep(0.70, 0.90, g);
+      // 꽃봉오리: g>0.85
+      const budShow = smoothstep(0.85, 1.00, g);
+
+      // 잎1 (좌하) — 줄기 y 약 105 위치
+      const lv1y = lerp(136, stemTopY + 50, easeOut(g));
+      const leaf1Size = leaf1Show * lerp(0.5, 1, easeOut(g));
+      const l1x = lv1y - 8;
+      const leaf1Path = `M${78} ${lv1y} Q${55 - leaf1Size * 10} ${lv1y - 18 * leaf1Size} ${50 - leaf1Size * 10} ${lv1y - 38 * leaf1Size} Q${65} ${lv1y - 18 * leaf1Size} ${78} ${lv1y - 16} Z`;
+
+      // 잎2 (우중)
+      const lv2y = lerp(136, stemTopY + 38, easeOut(g));
+      const leaf2Size = leaf2Show * lerp(0.5, 1, easeOut(g));
+      const leaf2Path = `M${82} ${lv2y} Q${106 + leaf2Size * 8} ${lv2y - 18 * leaf2Size} ${110 + leaf2Size * 8} ${lv2y - 40 * leaf2Size} Q${95} ${lv2y - 18 * leaf2Size} ${82} ${lv2y - 14} Z`;
+
+      // 잎3 (좌상)
+      const lv3y = lerp(136, stemTopY + 24, easeOut(g));
+      const leaf3Size = leaf3Show * lerp(0.4, 1, easeOut(g));
+      const leaf3Path = `M${79} ${lv3y} Q${56 - leaf3Size * 10} ${lv3y - 15 * leaf3Size} ${55 - leaf3Size * 10} ${lv3y - 34 * leaf3Size} Q${70} ${lv3y - 12 * leaf3Size} ${79} ${lv3y - 12} Z`;
+
+      // 잎4 (우상)
+      const lv4y = lerp(136, stemTopY + 14, easeOut(g));
+      const leaf4Size = leaf4Show * lerp(0.4, 1, easeOut(g));
+      const leaf4Path = `M${81} ${lv4y} Q${104 + leaf4Size * 8} ${lv4y - 14 * leaf4Size} ${106 + leaf4Size * 8} ${lv4y - 30 * leaf4Size} Q${91} ${lv4y - 10 * leaf4Size} ${81} ${lv4y - 10} Z`;
+
+      // 새싹 (초기)
+      const sproutShow = 1 - smoothstep(0, 0.12, g);
+      const sproutH = lerp(0, 8, Math.min(1, g * 10));
+
+      // 꽃봉오리
+      const budR = budShow * 6;
+      const budGlowR = budShow * 10;
+      const budY = stemTopY;
+
+      // 시듦 필터 삭제 및 기본 설정
+      const wiltFilter = 'none';
+
+      svg.innerHTML = `
+    <defs>
+      <filter id="leafGlow">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+    <g style="filter:${wiltFilter}; transition: filter 1.5s ease;">
+      <!-- 화분 -->
+      <ellipse cx="80" cy="166" rx="40" ry="8" fill="#1a2e1a"/>
+      <path d="M50 148 L56 166 L104 166 L110 148 Z" fill="#2a4a2a"/>
+      <path d="M44 140 Q44 136 48 136 L112 136 Q116 136 116 140 L116 148 L44 148 Z" fill="${potColor}"/>
+      <ellipse cx="80" cy="136" rx="36" ry="7" fill="${potRimColor}"/>
+      <ellipse cx="80" cy="136" rx="30" ry="5" fill="#1a2e1a"/>
+
+      <!-- 새싹 (초기 단계) -->
+      ${sproutShow > 0.01 ? `
+        <path d="M80 136 Q80 ${136 - sproutH * 0.6} 80 ${136 - sproutH}" stroke="${stemColor}" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="${sproutShow}"/>
+        <ellipse cx="${80 - sproutH * 0.3}" cy="${136 - sproutH}" rx="${sproutH * 0.4 + 0.5}" ry="${sproutH * 0.25 + 0.5}" fill="${leafColor3}" opacity="${sproutShow}" transform="rotate(-30, ${80 - sproutH * 0.3}, ${136 - sproutH})"/>
+        <ellipse cx="${80 + sproutH * 0.3}" cy="${136 - sproutH + 1}" rx="${sproutH * 0.35 + 0.5}" ry="${sproutH * 0.22 + 0.5}" fill="${leafColor2}" opacity="${sproutShow}" transform="rotate(20, ${80 + sproutH * 0.3}, ${136 - sproutH + 1})"/>
+      ` : ''}
+
+      <!-- 줄기 -->
+      ${g > 0.05 ? `<path d="${stemPath}" stroke="${stemColor}" stroke-width="${lerp(1.5, 3.5, g)}" stroke-linecap="round" fill="none"/>` : ''}
+
+      <!-- 잎1 (좌하) -->
+      ${leaf1Show > 0.01 ? `<g class="leaf leaf-l" style="opacity:${leaf1Show}"><path d="${leaf1Path}" fill="${leafColor1}"/></g>` : ''}
+
+      <!-- 잎2 (우중) -->
+      ${leaf2Show > 0.01 ? `<g class="leaf leaf-r" style="opacity:${leaf2Show}; animation-delay: 0.5s"><path d="${leaf2Path}" fill="${leafColor2}"/></g>` : ''}
+
+      <!-- 잎3 (좌상) -->
+      ${leaf3Show > 0.01 ? `<g class="leaf leaf-l" style="opacity:${leaf3Show}; animation-delay: 1s"><path d="${leaf3Path}" fill="${leafColor3}"/></g>` : ''}
+
+      <!-- 잎4 (우상) -->
+      ${leaf4Show > 0.01 ? `<g class="leaf leaf-r" style="opacity:${leaf4Show}; animation-delay: 1.5s"><path d="${leaf4Path}" fill="${leafColor1}"/></g>` : ''}
+
+      <!-- 꽃봉오리 -->
+      ${budShow > 0.01 ? `
+        <circle cx="80" cy="${budY}" r="${budGlowR}" fill="${budColor}" opacity="${budShow * 0.15}">
+          <animate attributeName="r" values="${budGlowR};${budGlowR + 4};${budGlowR}" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="${budShow * 0.15};${budShow * 0.04};${budShow * 0.15}" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="80" cy="${budY}" r="${budR}" fill="${budColor}" opacity="${budShow}"/>
+      ` : ''}
+
+      <!-- 물방울 (항상 노출) -->
+      ${g > 0.3 ? `
+        <g opacity="1">
+          <ellipse cx="${108 - g * 5}" cy="100" rx="2" ry="3" fill="${budColor}" opacity="0.5">
+            <animate attributeName="cy" values="100;115;100" dur="2.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0;0.5" dur="2.5s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="${52 + g * 5}" cy="85" rx="2" ry="3" fill="${budColor}" opacity="0.4">
+            <animate attributeName="cy" values="85;100;85" dur="3s" repeatCount="indefinite" begin="0.8s"/>
+            <animate attributeName="opacity" values="0.4;0;0.4" dur="3s" repeatCount="indefinite" begin="0.8s"/>
+          </ellipse>
+        </g>
+      ` : ''}
+    </g>
+  `;
+
+      // 상태 텍스트
+      updatePlantStatus(growth);
+    }
+
+    function updatePlantStatus(growth) {
+      const ps = plantStatus;
+      if (state.penaltySecs > 0) {
+        ps.className = 'danger'; ps.textContent = '⏳ 패널티로 성장이 멈췄어요!';
+      } else if (growth < 5) {
+        ps.className = ''; ps.textContent = '🌱 씨앗이 싹트고 있어요';
+      } else if (growth < 30) {
+        ps.className = ''; ps.textContent = '🌱 새싹이 자라고 있어요!';
+      } else if (growth < 60) {
+        ps.className = ''; ps.textContent = '🌿 쑥쑥 자라고 있어요!';
+      } else if (growth < 90) {
+        ps.className = ''; ps.textContent = '🪴 꽃봉오리가 맺히고 있어요!';
+      } else {
+        ps.className = ''; ps.textContent = '🌸 활짝 피어났어요!';
+      }
+    }
+
+    // ── 유틸 ──
+    function lerp(a, b, t) { return a + (b - a) * Math.max(0, Math.min(1, t)); }
+    function easeOut(t) { return 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 2.5); }
+    function smoothstep(edge0, edge1, t) {
+      const x = Math.max(0, Math.min(1, (t - edge0) / (edge1 - edge0)));
+      return x * x * (3 - 2 * x);
+    }
+    function lerpColor(hex1, hex2, t) {
+      const r1 = parseInt(hex1.slice(1, 3), 16), g1 = parseInt(hex1.slice(3, 5), 16), b1 = parseInt(hex1.slice(5, 7), 16);
+      const r2 = parseInt(hex2.slice(1, 3), 16), g2 = parseInt(hex2.slice(3, 5), 16), b2 = parseInt(hex2.slice(5, 7), 16);
+      const r = Math.round(lerp(r1, r2, t)), g = Math.round(lerp(g1, g2, t)), b = Math.round(lerp(b1, b2, t));
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+
+    // ══════════════════════════════════════════════
+    // Page Visibility API
+    // ══════════════════════════════════════════════
+    let hiddenStart = null;
+    let isHidden = false;
+
+    document.addEventListener('visibilitychange', () => {
+      if (!state.running || state.paused) return;
+      if (document.hidden) {
+        isHidden = true;
+        hiddenStart = Date.now();
+        onTabLeave();
+      } else if (isHidden) {
+        isHidden = false;
+        const secs = Math.floor((Date.now() - hiddenStart) / 1000);
+        onTabReturn(secs);
+      }
+    });
+
+    function onTabLeave() {
+      state.breaks++;
+      localStorage.setItem('fg_breaks', state.breaks);
+      updateStats();
+      warningOverlay.classList.add('show');
+      playWarningTone();
+      plantWrap.classList.add('warning');
+      setTimeout(() => plantWrap.classList.remove('warning'), 500);
+    }
+
+    function onTabReturn(secs) {
+      warningOverlay.classList.remove('show');
+      // 패널티 시간: 이탈한 시간만큼. 최대 5분(300초) 누적
+      const extraPenalty = Math.min(300, secs);
+      state.penaltySecs += extraPenalty;
+      drawPlant(state.growthPct);
+      timerSub.textContent = `↩ ${secs}초 이탈! 패널티 적용됨`;
+    }
+
+    document.getElementById('returnBtn').addEventListener('click', () => {
+      warningOverlay.classList.remove('show');
+    });
+
+    // ══════════════════════════════════════════════
+    // 오디오
+    // ══════════════════════════════════════════════
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = state.volume;
+        gainNode.connect(audioCtx.destination);
+      }
+    }
+
+    function playWarningTone() {
+      initAudio();
+      [400, 300, 400].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.frequency.value = freq; osc.type = 'sawtooth';
+        const t = audioCtx.currentTime + i * 0.15;
+        g.gain.setValueAtTime(0.15, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.start(t); osc.stop(t + 0.12);
+      });
+    }
+
+    function playTone(freq, vol, dur) {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.connect(g); g.connect(audioCtx.destination);
+      osc.frequency.value = freq; osc.type = 'sine';
+      g.gain.setValueAtTime(vol, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.start(); osc.stop(audioCtx.currentTime + dur);
+    }
+
+    function startNoise() {
+      if (state.currentNoise === 'none' || !audioCtx) return;
+      stopNoise();
+      const bufferSize = audioCtx.sampleRate * 3;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      if (state.currentNoise === 'white') {
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      } else if (state.currentNoise === 'brown') {
+        let last = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const w = Math.random() * 2 - 1;
+          data[i] = (last + 0.02 * w) / 1.02; last = data[i]; data[i] *= 3.5;
+        }
+      } else if (state.currentNoise === 'rain') {
+        for (let i = 0; i < bufferSize; i++) {
+          const r = Math.random();
+          data[i] = r < 0.001 ? (Math.random() * 2 - 1) * 0.8 : (Math.random() * 2 - 1) * 0.03;
+        }
+      } else if (state.currentNoise === 'forest') {
+        let last = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const w = Math.random() * 2 - 1;
+          data[i] = (last + 0.05 * w) / 1.05; last = data[i]; data[i] *= 2;
+        }
+      }
+      noiseNode = audioCtx.createBufferSource();
+      noiseNode.buffer = buffer; noiseNode.loop = true;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = state.currentNoise === 'white' ? 8000 : state.currentNoise === 'brown' ? 2000 : state.currentNoise === 'rain' ? 6000 : 4000;
+      noiseNode.connect(filter); filter.connect(gainNode); noiseNode.start();
+    }
+
+    function stopNoise() { if (noiseNode) { try { noiseNode.stop(); } catch (e) { } noiseNode = null; } }
+    function pauseNoise() { stopNoise(); }
+    function resumeNoise() { startNoise(); }
+
+    document.querySelectorAll('.noise-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.noise-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.currentNoise = btn.dataset.noise;
+        if (state.running && !state.paused) { initAudio(); stopNoise(); startNoise(); }
+      });
+    });
+
+    volSlider.addEventListener('input', () => {
+      const v = parseInt(volSlider.value);
+      volDisplay.textContent = v;
+      state.volume = v / 100;
+      if (gainNode) gainNode.gain.value = state.volume;
+    });
+
+    // ══════════════════════════════════════════════
+    // 통계 — 집중 분 = 누적 초 / 60
+    // ══════════════════════════════════════════════
+    function updateStats() {
+      statSessions.textContent = state.sessions;
+      statTotal.textContent = Math.floor(state.totalSecs / 60);
+      statBreaks.textContent = state.breaks;
+    }
+
+    // ── PWA ──
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault(); deferredInstall = e; installBanner.classList.add('show');
+    });
+    document.getElementById('installBtn').addEventListener('click', () => {
+      if (deferredInstall) {
+        deferredInstall.prompt();
+        deferredInstall.userChoice.then(() => { installBanner.classList.remove('show'); deferredInstall = null; });
+      }
+    });
+    document.getElementById('dismissInstall').addEventListener('click', () => installBanner.classList.remove('show'));
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => { });
+  </script>
+</body>
+
+</html>
